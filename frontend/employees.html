@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Employee Management</title>
+</head>
+<body>
+  <h2>💼 Employee Management</h2>
+  <a href="index.html">⬅ Back to Home</a>
+
+  <div id="form-container">
+    <h3 id="form-title">Add Employee</h3>
+    <input type="text" id="name" placeholder="Name">
+    <input type="text" id="position" placeholder="Position">
+    <input type="number" id="salary" placeholder="Salary">
+    <input type="text" id="department" placeholder="Department">
+    <button onclick="addOrUpdateEmployee()">Save</button>
+  </div>
+
+  <table border="1" id="employee-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Position</th>
+        <th>Salary</th>
+        <th>Department</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5001/employees";
+    let editId = null;
+
+    async function loadEmployees() {
+      const res = await fetch(API_BASE);
+      const data = await res.json();
+      const tbody = document.querySelector("#employee-table tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(e => {
+        const row = `
+          <tr>
+            <td>${e.name}</td>
+            <td>${e.position}</td>
+            <td>${e.salary}</td>
+            <td>${e.department}</td>
+            <td>
+              <button onclick="editEmployee('${e._id}', '${e.name}', '${e.position}', ${e.salary}, '${e.department}')">Edit</button>
+              <button onclick="deleteEmployee('${e._id}')">Delete</button>
+            </td>
+          </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    async function addOrUpdateEmployee() {
+      const name = document.getElementById("name").value;
+      const position = document.getElementById("position").value;
+      const salary = document.getElementById("salary").value;
+      const department = document.getElementById("department").value;
+
+      const data = { name, position, salary, department };
+      if (editId) {
+        await fetch(`${API_BASE}/${editId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        editId = null;
+        document.getElementById("form-title").innerText = "Add Employee";
+      } else {
+        await fetch(API_BASE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+      }
+
+      document.getElementById("name").value = "";
+      document.getElementById("position").value = "";
+      document.getElementById("salary").value = "";
+      document.getElementById("department").value = "";
+      loadEmployees();
+    }
+
+    function editEmployee(id, name, position, salary, department) {
+      editId = id;
+      document.getElementById("name").value = name;
+      document.getElementById("position").value = position;
+      document.getElementById("salary").value = salary;
+      document.getElementById("department").value = department;
+      document.getElementById("form-title").innerText = "Edit Employee";
+    }
+
+    async function deleteEmployee(id) {
+      await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      loadEmployees();
+    }
+
+    loadEmployees();
+  </script>
+</body>
+</html>
